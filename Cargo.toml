@@ -1,0 +1,7 @@
+[package]
+authors = ["Sebastian Menski <sebastian.menski@camunda.com>"]
+name = "zeebe-log-reader"
+version = "0.1.0"
+
+[dependencies]
+failure = "0.1.1"

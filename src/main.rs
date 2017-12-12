@@ -1,6 +1,3 @@
-// TODO: remove
-#![allow(dead_code)]
-
 #[macro_use]
 extern crate failure;
 
@@ -13,7 +10,7 @@ use std::io::Read;
 use logstream::LogStream;
 
 fn main() {
-    let filename = std::env::args().nth(1).unwrap_or("log/00.data".to_string());
+    let filename = std::env::args().nth(1).unwrap_or_else(||"log/00.data".to_string());
     let mut file = File::open(filename).unwrap();
 
     let mut buffer = Vec::new();

@@ -1,4 +1,4 @@
-use std::{self, fmt, mem, iter, convert};
+use std::{self, convert, fmt, iter, mem};
 
 use failure::Error;
 use decode::Decoder;
@@ -62,7 +62,10 @@ impl fmt::Debug for LogEntry {
             .field("position", &self.position)
             .field("raft_term", &self.raft_term)
             .field("producer", &self.producer)
-            .field("source_event_stream_partition", &self.source_event_stream_partition)
+            .field(
+                "source_event_stream_partition",
+                &self.source_event_stream_partition,
+            )
             .field("source_event_position", &self.source_event_position)
             .field("key", &self.key)
             .field("metadata_length", &self.metadata_length)
@@ -140,9 +143,7 @@ impl<'d> LogStream<'d> {
         let segment: &FsLogSegment = decoder.read_type().unwrap();
         decoder.truncate(segment.size as usize).unwrap();
         decoder.align(BLOCK_SIZE).unwrap();
-        LogStream {
-            decoder,
-        }
+        LogStream { decoder }
     }
 
     fn next(&mut self) -> Result<Option<LogEvent>, Error> {
@@ -159,14 +160,21 @@ impl<'d> LogStream<'d> {
 
                 let metadata: &Metadata = self.decoder.read_type()?;
 
-                self.decoder.read(data_frame.length as usize - mem::size_of_val(data_frame) - mem::size_of_val(entry) - entry.metadata_length as usize)?;
+                self.decoder.read(
+                    data_frame.length as usize - mem::size_of_val(data_frame) - mem::size_of_val(entry) -
+                        entry.metadata_length as usize,
+                )?;
 
                 log_event = Some(LogEvent {
                     position: entry.position,
                     key: entry.key,
                     raft_term: entry.raft_term,
                     producer: entry.producer.into(),
-                    source_event_position: if entry.source_event_position < std::u64::MAX { Some(entry.source_event_position)} else { None },
+                    source_event_position: if entry.source_event_position < std::u64::MAX {
+                        Some(entry.source_event_position)
+                    } else {
+                        None
+                    },
                     event_type: metadata.event_type.into(),
                 });
             }
@@ -176,7 +184,6 @@ impl<'d> LogStream<'d> {
 
         Ok(log_event)
     }
-
 }
 
 #[derive(Debug)]
@@ -224,7 +231,7 @@ pub struct LogEvent {
     raft_term: u32,
     producer: Producer,
     source_event_position: Option<u64>,
-    event_type: EventType
+    event_type: EventType,
 }
 
 impl<'d> iter::Iterator for LogStream<'d> {
@@ -240,4 +247,3 @@ impl<'d> iter::Iterator for LogStream<'d> {
         }
     }
 }
-

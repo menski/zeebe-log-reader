@@ -1,4 +1,4 @@
-use std::{mem, fmt};
+use std::{fmt, mem};
 use failure::Error;
 
 fn align(value: usize, alignment: usize) -> usize {
@@ -21,7 +21,7 @@ impl<'d> fmt::Debug for Decoder<'d> {
 
 impl<'d> Decoder<'d> {
     pub fn new(data: &'d [u8]) -> Self {
-        Decoder { data, position: 0,}
+        Decoder { data, position: 0 }
     }
 
     fn new_position(&self, bytes: usize) -> Result<usize, Error> {
@@ -84,5 +84,4 @@ impl<'d> Decoder<'d> {
     pub fn is_empty(&self) -> bool {
         self.position >= self.data.len()
     }
-
 }

@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate failure;
 
+mod data;
 mod decode;
 mod logstream;
 
@@ -18,7 +19,7 @@ fn main() {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer).unwrap();
 
-        let logstream = LogStream::new(&buffer);
+        let logstream = LogStream::new(&buffer).unwrap();
 
         for event in logstream {
             writeln!(output, "{:?}", event).unwrap();

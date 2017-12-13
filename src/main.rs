@@ -9,20 +9,32 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufWriter;
 
+use failure::Error;
+
 use logstream::LogStream;
 
 fn main() {
-    let mut output = BufWriter::new(File::create("log.txt").unwrap());
-    std::env::args().skip(1).for_each(|filename| {
-        let mut file = File::open(&filename).expect(&format!("Unable to open file {}", filename));
+    match try_main() {
+        Ok(_) => {}
+        Err(e) => eprintln!("Error: {}", e),
+    }
+}
+
+fn try_main() -> Result<(), Error> {
+    let mut output = BufWriter::new(File::create("log.txt")?);
+
+    for filename in std::env::args().skip(1) {
+        let mut file = File::open(&filename)?;
 
         let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).unwrap();
+        file.read_to_end(&mut buffer)?;
 
-        let logstream = LogStream::new(&buffer).unwrap();
+        let logstream = LogStream::new(&buffer)?;
 
         for event in logstream {
-            writeln!(output, "{:?}", event).unwrap();
+            writeln!(output, "{:?}", event)?;
         }
-    });
+    }
+
+    Ok(())
 }

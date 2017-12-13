@@ -86,7 +86,7 @@ impl fmt::Debug for WorkflowInstanceEvent {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Hash, Eq)]
 pub enum WorkflowInstanceState {
     CreateWorkflowInstance,
     WorkflowInstanceCreated,
@@ -174,7 +174,7 @@ impl fmt::Debug for TaskEvent {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Hash, Eq)]
 pub enum TaskState {
     Create,
     Created,
@@ -245,17 +245,6 @@ pub struct TaskHeaders {
     activity_id: String,
     activity_instance_key: i64,
 }
-
-/*
-    private final EnumProperty<TaskState> stateProp = new EnumProperty<>("state", TaskState.class);
-    private final LongProperty lockTimeProp = new LongProperty("lockTime", Protocol.INSTANT_NULL_VALUE);
-    private final StringProperty lockOwnerProp = new StringProperty("lockOwner", "");
-    private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
-    private final StringProperty typeProp = new StringProperty("type");
-    private final ObjectProperty<TaskHeaders> headersProp = new ObjectProperty<>("headers", new TaskHeaders());
-    private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
-    private final BinaryProperty payloadProp = new BinaryProperty("payload", NO_PAYLOAD);
-*/
 
 pub fn deserialize<'d, D: Deserialize<'d>>(data: &[u8]) -> Result<D, Error> {
     let mut de = Deserializer::new(data);

@@ -1,11 +1,21 @@
+#[macro_use]
+extern crate failure;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_bytes;
+extern crate rmp_serde;
 
+mod data;
+mod decode;
+mod msgpack;
 
 use data::*;
 use decode::Decoder;
 
 use failure::Error;
 use msgpack::*;
-use std::{self, convert, iter};
+use std::{convert, iter};
 
 #[derive(Debug)]
 pub enum EventType {
@@ -121,7 +131,7 @@ pub struct LogEvent {
     raft_term: u32,
     producer: Producer,
     source_event_position: Option<u64>,
-    event_type: EventType,
+    pub event_type: EventType,
 }
 
 impl<'d> iter::Iterator for LogStream<'d> {

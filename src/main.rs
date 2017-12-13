@@ -13,15 +13,17 @@ use failure::Error;
 
 use logstream::LogStream;
 
+const OUTPUT_FILE: &str = "log.txt";
+
 fn main() {
     match try_main() {
-        Ok(_) => {}
+        Ok(_) => println!("Log written to file: {}", OUTPUT_FILE),
         Err(e) => eprintln!("Error: {}", e),
     }
 }
 
 fn try_main() -> Result<(), Error> {
-    let mut output = BufWriter::new(File::create("log.txt")?);
+    let mut output = BufWriter::new(File::create(OUTPUT_FILE)?);
 
     for filename in std::env::args().skip(1) {
         let mut file = File::open(&filename)?;

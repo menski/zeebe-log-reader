@@ -1,17 +1,23 @@
 #[macro_use]
 extern crate failure;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_bytes;
+extern crate rmp_serde;
 
 mod data;
 mod decode;
 mod logstream;
+mod msgpack;
 
-use std::fs::File;
-use std::io::prelude::*;
-use std::io::BufWriter;
 
 use failure::Error;
 
 use logstream::LogStream;
+use std::fs::File;
+use std::io::BufWriter;
+use std::io::prelude::*;
 
 const OUTPUT_FILE: &str = "log.txt";
 

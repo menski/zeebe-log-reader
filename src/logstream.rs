@@ -1,37 +1,39 @@
-use std::{self, convert, iter};
 
-use failure::Error;
-use decode::Decoder;
 
 use data::*;
+use decode::Decoder;
+
+use failure::Error;
+use msgpack::*;
+use std::{self, convert, iter};
 
 #[derive(Debug)]
 pub enum EventType {
-    Task,
+    Task(TaskEvent),
     Raft,
     Subscription,
     Subscriber,
     Deployment,
-    WorkflowInstance,
+    WorkflowInstance(WorkflowInstanceEvent),
     Incident,
-    Workflow,
+    Workflow(WorkflowEvent),
     Noop,
     Topic,
     Partition,
     Unknown(u8),
 }
 
-impl convert::From<u8> for EventType {
-    fn from(event_type: u8) -> Self {
+impl<'d> convert::From<(u8, &'d [u8])> for EventType {
+    fn from((event_type, event): (u8, &'d [u8])) -> Self {
         match event_type {
-            0 => EventType::Task,
+            0 => EventType::Task(deserialize(event).unwrap()),
             1 => EventType::Raft,
             2 => EventType::Subscription,
             3 => EventType::Subscriber,
             4 => EventType::Deployment,
-            5 => EventType::WorkflowInstance,
+            5 => EventType::WorkflowInstance(deserialize(event).unwrap()),
             6 => EventType::Incident,
-            7 => EventType::Workflow,
+            7 => EventType::Workflow(deserialize(event).unwrap()),
             8 => EventType::Noop,
             9 => EventType::Topic,
             10 => EventType::Partition,
@@ -58,6 +60,7 @@ impl<'d> LogStream<'d> {
             if let Some(Entry {
                             log_entry,
                             metadata,
+                            event,
                         }) = frame.entry
             {
                 return Ok(Some(LogEvent {
@@ -66,7 +69,7 @@ impl<'d> LogStream<'d> {
                     raft_term: log_entry.raft_term,
                     producer: log_entry.producer.into(),
                     source_event_position: log_entry.source_event_position(),
-                    event_type: metadata.event_type.into(),
+                    event_type: (metadata.event_type, event).into(),
                 }));
 
             }

@@ -1,6 +1,7 @@
-use std::{self, fmt, mem};
-use failure::Error;
+
 use decode::Decoder;
+use failure::Error;
+use std::{self, fmt, mem};
 
 const CACHE_LINE_LENGTH: usize = 64;
 const BLOCK_SIZE: usize = 4 * 1024;
@@ -116,6 +117,7 @@ impl Metadata {
 pub struct Entry<'d> {
     pub log_entry: &'d LogEntry,
     pub metadata: &'d Metadata,
+    pub event: &'d [u8],
 }
 
 pub struct Frame<'d> {
@@ -141,16 +143,15 @@ pub fn decode_frame<'d>(decoder: &'d mut Decoder) -> Result<Frame<'d>, Error> {
 
             let metadata: &Metadata = decoder.read_type()?;
 
-            // TODO: capture buffer
-            decoder.read(
-                data_frame.length as usize - mem::size_of_val(data_frame) -
-                    mem::size_of_val(log_entry) -
+            let event = decoder.read(
+                data_frame.length as usize - mem::size_of_val(data_frame) - mem::size_of_val(log_entry) -
                     log_entry.metadata_length as usize,
             )?;
 
             Some(Entry {
                 log_entry,
                 metadata,
+                event,
             })
         }
         _ => None,

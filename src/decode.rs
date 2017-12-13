@@ -1,5 +1,6 @@
-use std::{fmt, mem};
+
 use failure::Error;
+use std::{fmt, mem};
 
 fn align(value: usize, alignment: usize) -> usize {
     (value + (alignment - 1)) & !(alignment - 1)

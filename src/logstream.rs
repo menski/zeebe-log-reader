@@ -107,7 +107,7 @@ pub enum EventType {
     Noop,
     Topic,
     Partition,
-    Unknown,
+    Unknown(u8),
 }
 
 impl convert::From<u8> for EventType {
@@ -124,10 +124,7 @@ impl convert::From<u8> for EventType {
             8 => EventType::Noop,
             9 => EventType::Topic,
             10 => EventType::Partition,
-            _ => {
-                eprintln!("Unknown event type: {}", event_type);
-                EventType::Unknown
-            }
+            _ => EventType::Unknown(event_type),
         }
     }
 }
@@ -198,7 +195,7 @@ enum Producer {
     Incident,
     SystemCreateTopic,
     SystemCollectPartition,
-    Unknown,
+    Unknown(u32),
     None,
 }
 
@@ -216,10 +213,7 @@ impl convert::From<u32> for Producer {
             1000 => Producer::SystemCreateTopic,
             1001 => Producer::SystemCollectPartition,
             std::u32::MAX => Producer::None,
-            _ => {
-                eprintln!("Unknown event producer id: {}", id);
-                Producer::Unknown
-            }
+            _ => Producer::Unknown(id),
         }
     }
 }

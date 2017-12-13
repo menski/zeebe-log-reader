@@ -18,12 +18,14 @@ use logstream::LogStream;
 use std::fs::File;
 use std::io::BufWriter;
 use std::io::prelude::*;
+use std::time::Instant;
 
 const OUTPUT_FILE: &str = "log.txt";
 
 fn main() {
+    let now = Instant::now();
     match try_main() {
-        Ok(_) => println!("Log written to file: {}", OUTPUT_FILE),
+        Ok(_) => println!("Log written to file {} in {:?}", OUTPUT_FILE, now.elapsed()),
         Err(e) => eprintln!("Error: {}", e),
     }
 }

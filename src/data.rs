@@ -1,4 +1,3 @@
-
 use decode::Decoder;
 use failure::Error;
 use std::{self, fmt, mem};

@@ -73,11 +73,11 @@ impl fmt::Debug for LogEntry {
 
 impl LogEntry {
     pub fn source_event_position(&self) -> Option<u64> {
-       if self.source_event_position < std::u64::MAX {
-           Some(self.source_event_position)
-       } else {
-           None
-       }
+        if self.source_event_position < std::u64::MAX {
+            Some(self.source_event_position)
+        } else {
+            None
+        }
     }
 }
 
@@ -143,7 +143,8 @@ pub fn decode_frame<'d>(decoder: &'d mut Decoder) -> Result<Frame<'d>, Error> {
 
             // TODO: capture buffer
             decoder.read(
-                data_frame.length as usize - mem::size_of_val(data_frame) - mem::size_of_val(log_entry) -
+                data_frame.length as usize - mem::size_of_val(data_frame) -
+                    mem::size_of_val(log_entry) -
                     log_entry.metadata_length as usize,
             )?;
 
@@ -151,14 +152,11 @@ pub fn decode_frame<'d>(decoder: &'d mut Decoder) -> Result<Frame<'d>, Error> {
                 log_entry,
                 metadata,
             })
-        },
-        _ => None
+        }
+        _ => None,
     };
 
     decoder.align(FRAME_ALIGNMENT)?;
 
-    Ok(Frame {
-        data_frame,
-        entry
-    })
+    Ok(Frame { data_frame, entry })
 }

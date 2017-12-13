@@ -55,7 +55,11 @@ impl<'d> LogStream<'d> {
     fn next(&mut self) -> Result<Option<LogEvent>, Error> {
         while !self.decoder.is_empty() {
             let frame = decode_frame(&mut self.decoder)?;
-            if let Some(Entry { log_entry, metadata }) = frame.entry {
+            if let Some(Entry {
+                            log_entry,
+                            metadata,
+                        }) = frame.entry
+            {
                 return Ok(Some(LogEvent {
                     position: log_entry.position,
                     key: log_entry.key,

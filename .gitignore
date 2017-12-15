@@ -11,3 +11,4 @@ Cargo.lock
 
 .idea
 log/*.txt
+log/01.data

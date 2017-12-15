@@ -9,6 +9,7 @@ use std::io::prelude::*;
 use std::time::Instant;
 
 use zeebe_log_reader::{EventType, LogStream};
+use zeebe_log_reader::msgpack::*;
 
 fn main() {
     let now = Instant::now();
@@ -30,10 +31,16 @@ fn try_main() -> Result<(), Error> {
 
         let logstream = LogStream::new(&buffer)?;
 
-        for event in logstream {
-            match event.event_type {
-                EventType::Task(e) => *task_events.entry(e.state).or_insert(0) += 1,
-                EventType::WorkflowInstance(e) => *workflow_instance_events.entry(e.state).or_insert(0) += 1,
+        for frame in logstream {
+            match frame.entry.metadata.event_type.into() {
+                EventType::Task => {
+                    let e: TaskEvent = deserialize(frame.entry.event)?;
+                    *task_events.entry(e.state).or_insert(0) += 1;
+                },
+                EventType::WorkflowInstance => {
+                    let e: WorkflowInstanceEvent = deserialize(frame.entry.event)?;
+                    *workflow_instance_events.entry(e.state).or_insert(0) += 1
+                },
                 _ => {}
             }
         }

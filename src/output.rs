@@ -1,11 +1,13 @@
-use LogEvent;
 use failure::Error;
 use std::fs::File;
 use std::io::{self, BufWriter};
 use std::io::prelude::*;
+use data::Frame;
+use EventType;
+use msgpack::*;
 
 pub trait EventOutput {
-    fn output(&mut self, event: &LogEvent) -> Result<(), Error>;
+    fn output(&mut self, frame: &Frame) -> Result<(), Error>;
 }
 
 pub struct StdOutput {
@@ -19,8 +21,32 @@ impl StdOutput {
 }
 
 impl EventOutput for StdOutput {
-    fn output(&mut self, event: &LogEvent) -> Result<(), Error> {
-        Ok(writeln!(self.output, "{:?}", event)?)
+    fn output(&mut self, frame: &Frame) -> Result<(), Error> {
+        let event_type: EventType = frame.entry.metadata.event_type.into();
+        write!(self.output, "{{ position: {}, key: {}, source_event_position: {}, producer: {}, type: {:?} ",
+                    frame.entry.log_entry.position,
+                    frame.entry.log_entry.key,
+                    frame.entry.log_entry.source_event_position,
+                    frame.entry.log_entry.producer,
+                    event_type)?;
+
+        match event_type {
+            EventType::Task => {
+                let event: TaskEvent = deserialize(frame.entry.event)?;
+                write!(self.output, "{:?}", event)?;
+            }
+            EventType::Workflow => {
+                let event: WorkflowEvent = deserialize(frame.entry.event)?;
+                write!(self.output, "{:?}", event)?;
+            }
+            EventType::WorkflowInstance => {
+                let event: WorkflowInstanceEvent = deserialize(frame.entry.event)?;
+                write!(self.output, "{:?}", event)?;
+            }
+            _ => {}
+        }
+
+        Ok(writeln!(self.output, " }}")?)
     }
 }
 
@@ -37,7 +63,31 @@ impl FileOutput {
 }
 
 impl EventOutput for FileOutput {
-    fn output(&mut self, event: &LogEvent) -> Result<(), Error> {
-        Ok(writeln!(self.output, "{:?}", event)?)
+    fn output(&mut self, frame: &Frame) -> Result<(), Error> {
+        let event_type: EventType = frame.entry.metadata.event_type.into();
+        write!(self.output, "{{ position: {}, key: {}, source_event_position: {}, producer: {}, type: {:?} ",
+               frame.entry.log_entry.position,
+               frame.entry.log_entry.key,
+               frame.entry.log_entry.source_event_position,
+               frame.entry.log_entry.producer,
+               event_type)?;
+
+        match event_type {
+            EventType::Task => {
+                let event: TaskEvent = deserialize(frame.entry.event)?;
+                write!(self.output, "{:?}", event)?;
+            }
+            EventType::Workflow => {
+                let event: WorkflowEvent = deserialize(frame.entry.event)?;
+                write!(self.output, "{:?}", event)?;
+            }
+            EventType::WorkflowInstance => {
+                let event: WorkflowInstanceEvent = deserialize(frame.entry.event)?;
+                write!(self.output, "{:?}", event)?;
+            }
+            _ => {}
+        }
+
+        Ok(writeln!(self.output, " }}")?)
     }
 }

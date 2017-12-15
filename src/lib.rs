@@ -8,43 +8,42 @@ extern crate rmp_serde;
 
 mod data;
 mod decode;
-mod msgpack;
+pub mod msgpack;
 pub mod output;
 
 use data::*;
 use decode::Decoder;
 
 use failure::Error;
-use msgpack::*;
-use std::{convert, iter};
+use std::{convert, iter, mem};
 
 #[derive(Debug)]
 pub enum EventType {
-    Task(TaskEvent),
+    Task,
     Raft,
     Subscription,
     Subscriber,
     Deployment,
-    WorkflowInstance(WorkflowInstanceEvent),
+    WorkflowInstance,
     Incident,
-    Workflow(WorkflowEvent),
+    Workflow,
     Noop,
     Topic,
     Partition,
     Unknown(u8),
 }
 
-impl<'d> convert::From<(u8, &'d [u8])> for EventType {
-    fn from((event_type, event): (u8, &'d [u8])) -> Self {
+impl<'d> convert::From<u8> for EventType {
+    fn from(event_type :u8) -> Self {
         match event_type {
-            0 => EventType::Task(deserialize(event).unwrap()),
+            0 => EventType::Task,
             1 => EventType::Raft,
             2 => EventType::Subscription,
             3 => EventType::Subscriber,
             4 => EventType::Deployment,
-            5 => EventType::WorkflowInstance(deserialize(event).unwrap()),
+            5 => EventType::WorkflowInstance,
             6 => EventType::Incident,
-            7 => EventType::Workflow(deserialize(event).unwrap()),
+            7 => EventType::Workflow,
             8 => EventType::Noop,
             9 => EventType::Topic,
             10 => EventType::Partition,
@@ -73,30 +72,37 @@ impl<'d> LogStream<'d> {
         self.filter = Some(filter);
     }
 
-    fn next(&mut self) -> Result<Option<LogEvent>, Error> {
+    fn next(&mut self) -> Result<Option<Frame<'d>>, Error> {
         while !self.decoder.is_empty() {
-            let frame = decode_frame(&mut self.decoder)?;
-            if let Some(Entry {
-                            log_entry,
-                            metadata,
-                            event,
-                        }) = frame.entry
-            {
-                if let Some(filter) = self.filter {
-                    if filter != metadata.event_type {
-                        continue;
-                    }
+            let data_frame: &DataFrame = self.decoder.read_type()?;
+            let entry = match data_frame.frame_type {
+                FRAME_MESSAGE => {
+                    let log_entry: &LogEntry = self.decoder.read_type()?;
+
+                    let sbe_header: &SbeHeader = self.decoder.read_type()?;
+                    assert_eq!(&Metadata::sbe_header(), sbe_header);
+
+                    let metadata: &Metadata = self.decoder.read_type()?;
+
+                    let event = self.decoder.read(
+                        data_frame.length as usize - mem::size_of_val(data_frame) - mem::size_of_val(log_entry) -
+                            log_entry.metadata_length as usize,
+                    )?;
+
+                    Some(Entry {
+                        log_entry,
+                        metadata,
+                        event,
+                    })
                 }
+                _ => None,
+            };
 
-                return Ok(Some(LogEvent {
-                    position: log_entry.position,
-                    key: log_entry.key,
-                    raft_term: log_entry.raft_term,
-                    producer: log_entry.producer.into(),
-                    source_event_position: log_entry.source_event_position(),
-                    event_type: (metadata.event_type, event).into(),
-                }));
+            self.decoder.align(FRAME_ALIGNMENT)?;
 
+            if let Some(entry) = entry {
+
+                return Ok(Some(Frame { data_frame, entry }));
             }
         }
 
@@ -150,7 +156,7 @@ pub struct LogEvent {
 }
 
 impl<'d> iter::Iterator for LogStream<'d> {
-    type Item = LogEvent;
+    type Item = Frame<'d>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.next() {

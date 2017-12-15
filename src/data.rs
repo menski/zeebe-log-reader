@@ -4,8 +4,8 @@ use std::{self, fmt, mem};
 
 const CACHE_LINE_LENGTH: usize = 64;
 const BLOCK_SIZE: usize = 4 * 1024;
-const FRAME_ALIGNMENT: usize = 8;
-const FRAME_MESSAGE: u16 = 0;
+pub const FRAME_ALIGNMENT: usize = 8;
+pub const FRAME_MESSAGE: u16 = 0;
 
 #[repr(C, packed)]
 pub struct FsLogSegment {
@@ -97,7 +97,7 @@ pub struct Metadata {
     pub request_stream_id: i32,
     pub request_id: u64,
     pub subscription_id: u64,
-    pub protcol_version: u16,
+    pub protocol_version: u16,
     pub event_type: u8,
     pub incident_key: u64,
 }
@@ -121,7 +121,7 @@ pub struct Entry<'d> {
 
 pub struct Frame<'d> {
     pub data_frame: &'d DataFrame,
-    pub entry: Option<Entry<'d>>,
+    pub entry: Entry<'d>,
 }
 
 pub fn decode_fs_log_segment<'d>(decoder: &'d mut Decoder) -> Result<&'d FsLogSegment, Error> {
@@ -129,34 +129,4 @@ pub fn decode_fs_log_segment<'d>(decoder: &'d mut Decoder) -> Result<&'d FsLogSe
     decoder.truncate(segment.size as usize)?;
     decoder.align(BLOCK_SIZE)?;
     Ok(segment)
-}
-
-pub fn decode_frame<'d>(decoder: &'d mut Decoder) -> Result<Frame<'d>, Error> {
-    let data_frame: &DataFrame = decoder.read_type()?;
-    let entry = match data_frame.frame_type {
-        FRAME_MESSAGE => {
-            let log_entry: &LogEntry = decoder.read_type()?;
-
-            let sbe_header: &SbeHeader = decoder.read_type()?;
-            assert_eq!(&Metadata::sbe_header(), sbe_header);
-
-            let metadata: &Metadata = decoder.read_type()?;
-
-            let event = decoder.read(
-                data_frame.length as usize - mem::size_of_val(data_frame) - mem::size_of_val(log_entry) -
-                    log_entry.metadata_length as usize,
-            )?;
-
-            Some(Entry {
-                log_entry,
-                metadata,
-                event,
-            })
-        }
-        _ => None,
-    };
-
-    decoder.align(FRAME_ALIGNMENT)?;
-
-    Ok(Frame { data_frame, entry })
 }

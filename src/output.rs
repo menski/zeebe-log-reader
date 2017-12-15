@@ -1,8 +1,8 @@
 use LogEvent;
-use std::io::{self, BufWriter};
-use std::fs::File;
-use std::io::prelude::*;
 use failure::Error;
+use std::fs::File;
+use std::io::{self, BufWriter};
+use std::io::prelude::*;
 
 pub trait EventOutput {
     fn output(&mut self, event: &LogEvent) -> Result<(), Error>;
@@ -14,9 +14,7 @@ pub struct StdOutput {
 
 impl StdOutput {
     pub fn new() -> Self {
-        StdOutput {
-            output: io::stdout(),
-        }
+        StdOutput { output: io::stdout() }
     }
 }
 

@@ -9,6 +9,7 @@ extern crate rmp_serde;
 mod data;
 mod decode;
 mod msgpack;
+pub mod output;
 
 use data::*;
 use decode::Decoder;
@@ -55,13 +56,21 @@ impl<'d> convert::From<(u8, &'d [u8])> for EventType {
 #[derive(Debug)]
 pub struct LogStream<'d> {
     decoder: Decoder<'d>,
+    filter: Option<u8>,
 }
 
 impl<'d> LogStream<'d> {
     pub fn new(data: &'d [u8]) -> Result<Self, Error> {
         let mut decoder = Decoder::new(data);
         decode_fs_log_segment(&mut decoder)?;
-        Ok(LogStream { decoder })
+        Ok(LogStream {
+            decoder,
+            filter: None,
+        })
+    }
+
+    pub fn event_filter(&mut self, filter: u8) {
+        self.filter = Some(filter);
     }
 
     fn next(&mut self) -> Result<Option<LogEvent>, Error> {
@@ -73,6 +82,12 @@ impl<'d> LogStream<'d> {
                             event,
                         }) = frame.entry
             {
+                if let Some(filter) = self.filter {
+                    if filter != metadata.event_type {
+                        continue;
+                    }
+                }
+
                 return Ok(Some(LogEvent {
                     position: log_entry.position,
                     key: log_entry.key,

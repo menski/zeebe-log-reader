@@ -1,4 +1,3 @@
-#[macro_use]
 extern crate failure;
 extern crate zeebe_log_reader;
 extern crate structopt;
@@ -9,11 +8,10 @@ use failure::Error;
 use std::fs::File;
 use std::io::prelude::*;
 use std::time::Instant;
-use std::convert;
 
 use structopt::StructOpt;
 
-use zeebe_log_reader::{LogStream, EventType};
+use zeebe_log_reader::LogStream;
 use zeebe_log_reader::output::*;
 
 #[derive(StructOpt, Debug)]
@@ -24,7 +22,7 @@ struct Opt {
     #[structopt(help = "Input files")]
     input: Vec<String>,
     #[structopt(short = "f", long = "filter", help = "Filter event type")]
-    filter: Option<EventType>,
+    filter: Option<u8>,
 }
 
 fn main() {
@@ -32,8 +30,12 @@ fn main() {
     match try_main() {
         Ok(_) => {
             let duration = now.elapsed();
-            println!("Took {}.{:09}s", duration.as_secs(), duration.subsec_nanos())
-        },
+            println!(
+                "Took {}.{:09}s",
+                duration.as_secs(),
+                duration.subsec_nanos()
+            )
+        }
         Err(e) => eprintln!("Error: {}", e),
     }
 }
@@ -59,17 +61,21 @@ fn try_main() -> Result<(), Error> {
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
 
-        let logstream = LogStream::new(&buffer)?;
+        let mut logstream = LogStream::new(&buffer)?;
+
+        opt.filter.map(|f| logstream.event_filter(f));
 
         for event in logstream {
-            if let Some(event_type) = opt.filter {
-            }
             output.output(&event)?;
         }
 
         if !opt.console {
             let duration = now.elapsed();
-            println!(". Took {}.{:09}s", duration.as_secs(), duration.subsec_nanos());
+            println!(
+                ". Took {}.{:09}s",
+                duration.as_secs(),
+                duration.subsec_nanos()
+            );
         }
     }
 
